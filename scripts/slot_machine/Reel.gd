@@ -1,17 +1,29 @@
 extends Node2D
 class_name Reel
 
+var reel_index: int = 0
 var target_symbols: Array = []
 var spinning: bool = false
 var sprites: Array[Sprite2D] = []
 var spin_speed: float = 1800.0
+var blur_material: ShaderMaterial
+var shimmer_material: ShaderMaterial
 
 func _ready():
+	blur_material = ShaderMaterial.new()
+	blur_material.shader = load("res://assets/shaders/reel_blur.gdshader")
+	blur_material.set_shader_parameter("blur_amount", 0.0)
+	
+	shimmer_material = ShaderMaterial.new()
+	shimmer_material.shader = load("res://assets/shaders/shimmer.gdshader")
+	shimmer_material.set_shader_parameter("shimmer_intensity", 1.0)
+	
 	# Create 4 sprites (1 extra for seamless wrap-around at the top)
 	for i in range(4):
 		var sprite = Sprite2D.new()
 		sprite.position = Vector2(0, (i - 1) * 110) # -110, 0, 110, 220
 		sprite.scale = Vector2(0.08, 0.08)
+		sprite.material = blur_material
 		add_child(sprite)
 		sprites.append(sprite)
 
@@ -38,11 +50,16 @@ func set_initial_symbols(outcome_symbols: Array):
 func start_spin():
 	spinning = true
 	for sprite in sprites:
-		sprite.modulate = Color(1, 1, 1, 1.0) # Reset any previous dims
+		sprite.material = blur_material
+	blur_material.set_shader_parameter("blur_amount", 8.0)
 
 func stop_spin(outcome_symbols: Array):
 	spinning = false
 	target_symbols = outcome_symbols
+	
+	# Tween blur down
+	var blur_tween = create_tween()
+	blur_tween.tween_method(func(val): blur_material.set_shader_parameter("blur_amount", val), 8.0, 0.0, 0.4)
 	
 	for i in range(4):
 		# Assign the final mathematical textures
@@ -60,6 +77,16 @@ func stop_spin(outcome_symbols: Array):
 		var tween = create_tween()
 		tween.tween_property(sprites[i], "position:y", final_y, 0.4).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
+	await get_tree().create_timer(0.4).timeout
+	EventManager.reel_stopped.emit(reel_index, target_symbols)
+
+func reset_visuals():
+	for sprite in sprites:
+		sprite.modulate = Color(1, 1, 1, 1.0)
+		sprite.scale = Vector2(0.08, 0.08)
+		sprite.material = blur_material
+	blur_material.set_shader_parameter("blur_amount", 0.0)
+
 func dim_all():
 	for i in range(1, 4):
 		var tween = create_tween()
@@ -68,9 +95,11 @@ func dim_all():
 func highlight_symbol(row_index: int):
 	# row_index is 0, 1, 2. But our visible sprites are indices 1, 2, 3.
 	var sprite = sprites[row_index + 1]
+	sprite.material = shimmer_material
 	
-	var tween = create_tween()
+	var tween = create_tween().set_loops()
 	# Restore color and pulse scale
-	tween.tween_property(sprite, "modulate", Color(1.2, 1.2, 1.2, 1.0), 0.2)
-	tween.tween_property(sprite, "scale", Vector2(0.1, 0.1), 0.2)
-	tween.tween_property(sprite, "scale", Vector2(0.08, 0.08), 0.2)
+	tween.tween_property(sprite, "modulate", Color(1.2, 1.2, 1.2, 1.0), 0.4)
+	tween.tween_property(sprite, "scale", Vector2(0.09, 0.09), 0.4)
+	tween.tween_property(sprite, "modulate", Color(1.0, 1.0, 1.0, 1.0), 0.4)
+	tween.tween_property(sprite, "scale", Vector2(0.08, 0.08), 0.4)

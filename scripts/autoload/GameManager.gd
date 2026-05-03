@@ -3,7 +3,8 @@ extends Node
 enum GameState {
 	IDLE,
 	SPINNING,
-	EVALUATING,
+	REEL_STOPPING,
+	WIN_EVALUATION,
 	PAYOUT
 }
 
@@ -22,14 +23,17 @@ var current_outcome = []
 # List of all available symbols to roll
 # In a real game, this would be populated from resources
 var available_symbols: Array[SlotSymbol] = []
-var active_paylines: Array[Payline] = []
+var active_patterns: Array[SlotPattern] = []
 
 var pending_win_amount: int = 0
 var pending_winning_lines: Array = []
+var reels_stopped_count: int = 0
 
 func _ready():
 	EventManager.spin_requested.connect(_on_spin_requested)
 	EventManager.spin_stopped.connect(on_all_reels_stopped)
+	EventManager.reel_stopped.connect(_on_reel_stopped)
+	EventManager.payout_complete.connect(_on_payout_complete)
 	
 	# For testing: setup dummy symbols and paylines if empty
 	if available_symbols.is_empty():
@@ -69,16 +73,55 @@ func _ready():
 		s_clover.texture = load_texture("res://assets/graphics/clover.jpg")
 		available_symbols.append(s_clover)
 		
-	if active_paylines.is_empty():
-		var p1 = Payline.new()
-		p1.positions.assign([Vector2(0, 0), Vector2(1, 0), Vector2(2, 0), Vector2(3, 0), Vector2(4, 0)])
-		active_paylines.append(p1)
-		var p2 = Payline.new()
-		p2.positions.assign([Vector2(0, 1), Vector2(1, 1), Vector2(2, 1), Vector2(3, 1), Vector2(4, 1)])
-		active_paylines.append(p2)
-		var p3 = Payline.new()
-		p3.positions.assign([Vector2(0, 2), Vector2(1, 2), Vector2(2, 2), Vector2(3, 2), Vector2(4, 2)])
-		active_paylines.append(p3)
+	if active_patterns.is_empty():
+		# --- Horizontal 3-in-a-row (3 windows per row × 3 rows = 9) ---
+		for row in range(3):
+			for start_col in range(3):  # 0-2, 1-3, 2-4
+				var p = SlotPattern.new()
+				p.pattern_name = "H Row%d Col%d-%d" % [row, start_col, start_col + 2]
+				p.positions.assign([
+					Vector2(start_col, row),
+					Vector2(start_col + 1, row),
+					Vector2(start_col + 2, row)
+				])
+				p.min_match = 3
+				active_patterns.append(p)
+		
+		# --- Vertical 3-in-a-row (1 per column × 5 columns = 5) ---
+		for col in range(5):
+			var p = SlotPattern.new()
+			p.pattern_name = "V Col%d" % col
+			p.positions.assign([
+				Vector2(col, 0),
+				Vector2(col, 1),
+				Vector2(col, 2)
+			])
+			p.min_match = 3
+			active_patterns.append(p)
+		
+		# --- Diagonal ↘ 3-in-a-row (3 starting positions) ---
+		for start_col in range(3):
+			var p = SlotPattern.new()
+			p.pattern_name = "Diag↘ Col%d" % start_col
+			p.positions.assign([
+				Vector2(start_col, 0),
+				Vector2(start_col + 1, 1),
+				Vector2(start_col + 2, 2)
+			])
+			p.min_match = 3
+			active_patterns.append(p)
+		
+		# --- Diagonal ↗ 3-in-a-row (3 starting positions) ---
+		for start_col in range(3):
+			var p = SlotPattern.new()
+			p.pattern_name = "Diag↗ Col%d" % start_col
+			p.positions.assign([
+				Vector2(start_col, 2),
+				Vector2(start_col + 1, 1),
+				Vector2(start_col + 2, 0)
+			])
+			p.min_match = 3
+			active_patterns.append(p)
 
 	# Generate an initial state so the slot machine isn't empty on startup
 	calculate_spin_outcome()
@@ -109,6 +152,7 @@ func _on_spin_requested():
 	EventManager.credits_updated.emit(credits)
 	
 	change_state(GameState.SPINNING)
+	reels_stopped_count = 0
 	
 	# Math-first RNG: Calculate the outcome instantly
 	calculate_spin_outcome()
@@ -133,42 +177,52 @@ func evaluate_wins():
 	pending_win_amount = 0
 	pending_winning_lines.clear()
 	
-	for payline in active_paylines:
-		if payline.positions.size() == 0:
+	for pattern in active_patterns:
+		if pattern.positions.size() == 0:
 			continue
 			
-		var first_pos = payline.positions[0]
+		var first_pos = pattern.positions[0]
 		var match_symbol = current_outcome[first_pos.x][first_pos.y]
 		if match_symbol == null:
 			continue
 			
 		var match_count = 1
-		for i in range(1, payline.positions.size()):
-			var pos = payline.positions[i]
+		for i in range(1, pattern.positions.size()):
+			var pos = pattern.positions[i]
 			var symbol = current_outcome[pos.x][pos.y]
 			if symbol != null and symbol.id == match_symbol.id:
 				match_count += 1
 			else:
 				break
 				
-		# Need at least 3 matches from left to right to win
-		if match_count >= 3:
-			var win_amount = match_symbol.base_value * match_count * payline.multiplier
+		if match_count >= pattern.min_match:
+			var win_amount = int(match_symbol.base_value * match_count * pattern.multiplier)
 			pending_win_amount += win_amount
-			pending_winning_lines.append(payline)
-			print("Evaluated Win! Matched ", match_count, " ", match_symbol.id, "s for ", win_amount)
+			pending_winning_lines.append({
+				"pattern": pattern,
+				"win_amount": win_amount,
+				"match_count": match_count,
+				"symbol_id": match_symbol.id
+			})
+			print("Evaluated Win! %s: Matched %d %ss for %d" % [pattern.pattern_name, match_count, match_symbol.id, win_amount])
 			
 	if pending_win_amount > 0:
 		print("Total pending win for spin: ", pending_win_amount)
 	else:
 		print("No pending win this spin.")
 
+func _on_reel_stopped(reel_index: int, _final_symbols: Array):
+	if current_state == GameState.SPINNING or current_state == GameState.REEL_STOPPING:
+		change_state(GameState.REEL_STOPPING)
+		reels_stopped_count += 1
+		if reels_stopped_count >= REELS_COUNT:
+			EventManager.spin_stopped.emit()
+
 # Called by the visual slot machine when all reels have finished their stopping animations
 func on_all_reels_stopped():
-	if current_state == GameState.SPINNING:
-		change_state(GameState.EVALUATING)
+	if current_state == GameState.REEL_STOPPING:
+		change_state(GameState.WIN_EVALUATION)
 		
-		# Now that reels stopped visually, broadcast the win to trigger visual highlights
 		if pending_win_amount > 0:
 			EventManager.win_calculated.emit(pending_win_amount, pending_winning_lines)
 			
@@ -176,8 +230,12 @@ func on_all_reels_stopped():
 			await get_tree().create_timer(1.5).timeout
 			
 			change_state(GameState.PAYOUT)
-			credits += pending_win_amount
-			EventManager.credits_updated.emit(credits)
-		
-		# Go back to IDLE
-		change_state(GameState.IDLE)
+			EventManager.payout_started.emit(pending_win_amount)
+		else:
+			# No win, go back to IDLE
+			change_state(GameState.IDLE)
+
+func _on_payout_complete():
+	credits += pending_win_amount
+	EventManager.credits_updated.emit(credits)
+	change_state(GameState.IDLE)

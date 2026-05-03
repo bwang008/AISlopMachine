@@ -40,13 +40,16 @@ def generate_wav(filename, duration, freq1, freq2=None, volume=0.5, wave_type='s
             data = struct.pack('<h', int(value * 32767.0))
             wav_file.writeframesraw(data)
 
-# 1. Spin tick (short click)
-generate_wav('assets/audio/spin.wav', 0.1, 800, 1200, 0.2, 'square', decay=20)
+# 1. Spin tick (short click) — PRESERVED: using manually sourced spin.wav, do not overwrite
+# generate_wav('assets/audio/spin.wav', 0.1, 800, 1200, 0.2, 'square', decay=20)
 
 # 2. Reel Stop (deep thud, frequency sweep down)
 generate_wav('assets/audio/stop.wav', 0.3, 150, 40, 0.8, 'sine', decay=15)
 
 # 3. Win Fanfare (bright happy sweep up)
 generate_wav('assets/audio/win.wav', 1.5, 400, 1200, 0.5, 'sine', decay=2)
+
+# 4. Coin Chime (short high pitched sine, 1200Hz, steep decay)
+generate_wav('assets/audio/coin_chime.wav', 0.05, 1200, None, 0.4, 'sine', decay=30)
 
 print("Audio files generated in assets/audio/")

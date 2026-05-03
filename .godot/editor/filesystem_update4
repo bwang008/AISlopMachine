@@ -3,3 +3,5 @@ res://scripts/autoload/GameManager.gd
 res://scripts/slot_machine/Reel.gd
 res://scripts/slot_machine/SlotMachine.gd
 res://scripts/autoload/SoundManager.gd
+res://scripts/autoload/EventManager.gd
+res://scripts/ui/GameUI.gd

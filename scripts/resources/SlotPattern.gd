@@ -1,6 +1,7 @@
-class_name Payline
+class_name SlotPattern
 extends Resource
 
-# Array of Vector2 representing the (column, row) coordinates on the 5x3 grid
+@export var pattern_name: String = ""
 @export var positions: Array[Vector2] = []
+@export var min_match: int = 3
 @export var multiplier: float = 1.0
