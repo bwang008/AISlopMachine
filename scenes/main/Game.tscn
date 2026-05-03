@@ -1,0 +1,29 @@
+[gd_scene load_steps=3 format=3 uid="uid://6cgwd0ywhsp2"]
+
+[ext_resource type="Script" uid="uid://brsuqx5tb5o5s" path="res://scripts/ui/GameUI.gd" id="1_xxx"]
+[ext_resource type="Script" uid="uid://b1hv6d1ue6af7" path="res://scripts/slot_machine/SlotMachine.gd" id="2_yyy"]
+
+[node name="Game" type="Node2D"]
+
+[node name="SlotMachine" type="Node2D" parent="."]
+position = Vector2(320, 200)
+script = ExtResource("2_yyy")
+
+[node name="UI" type="CanvasLayer" parent="."]
+script = ExtResource("1_xxx")
+
+[node name="SpinButton" type="Button" parent="UI"]
+offset_left = 500.0
+offset_top = 500.0
+offset_right = 650.0
+offset_bottom = 560.0
+theme_override_font_sizes/font_size = 24
+text = "SPIN"
+
+[node name="CreditsLabel" type="Label" parent="UI"]
+offset_left = 50.0
+offset_top = 50.0
+offset_right = 200.0
+offset_bottom = 90.0
+theme_override_font_sizes/font_size = 24
+text = "Credits: 1000"

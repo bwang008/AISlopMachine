@@ -1,0 +1,5 @@
+res://scenes/main/Game.tscn
+res://scripts/autoload/GameManager.gd
+res://scripts/slot_machine/Reel.gd
+res://scripts/slot_machine/SlotMachine.gd
+res://scripts/autoload/SoundManager.gd
