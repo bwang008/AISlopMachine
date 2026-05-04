@@ -8,6 +8,8 @@
 [node name="SlotMachine" type="Node2D" parent="."]
 position = Vector2(320, 200)
 script = ExtResource("2_yyy")
+debug_force_outcome = 5
+debug_presentation_pause = 0.63
 
 [node name="UI" type="CanvasLayer" parent="."]
 script = ExtResource("1_xxx")

@@ -8,6 +8,7 @@ var sprites: Array[Sprite2D] = []
 var spin_speed: float = 1800.0
 var blur_material: ShaderMaterial
 var shimmer_material: ShaderMaterial
+var active_tweens: Array[Tween] = []
 
 func _ready():
 	blur_material = ShaderMaterial.new()
@@ -81,6 +82,12 @@ func stop_spin(outcome_symbols: Array):
 	EventManager.reel_stopped.emit(reel_index, target_symbols)
 
 func reset_visuals():
+	# Kill all looping highlight tweens from the previous spin
+	for tw in active_tweens:
+		if tw != null and tw.is_valid():
+			tw.kill()
+	active_tweens.clear()
+	
 	for sprite in sprites:
 		sprite.modulate = Color(1, 1, 1, 1.0)
 		sprite.scale = Vector2(0.08, 0.08)
@@ -98,6 +105,7 @@ func highlight_symbol(row_index: int):
 	sprite.material = shimmer_material
 	
 	var tween = create_tween().set_loops()
+	active_tweens.append(tween)
 	# Restore color and pulse scale
 	tween.tween_property(sprite, "modulate", Color(1.2, 1.2, 1.2, 1.0), 0.4)
 	tween.tween_property(sprite, "scale", Vector2(0.09, 0.09), 0.4)

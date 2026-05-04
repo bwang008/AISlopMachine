@@ -5,3 +5,6 @@ res://scripts/slot_machine/SlotMachine.gd
 res://scripts/autoload/SoundManager.gd
 res://scripts/autoload/EventManager.gd
 res://scripts/ui/GameUI.gd
+res://scripts/slot_machine/WinLineRenderer.gd
+res://scripts/slot_machine/GoldBurst.gd
+res://default_bus_layout.tres

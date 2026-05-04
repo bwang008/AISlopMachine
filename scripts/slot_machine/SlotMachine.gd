@@ -1,9 +1,13 @@
 extends Node2D
 
+@export_enum("None", "Force Horizontal 3", "Force Vertical 4", "Force Diagonal 5", "Force V-Shape", "Force Jackpot") var debug_force_outcome: int = 0
+@export var debug_presentation_pause: float = 1.5
+
 var reels: Array[Reel] = []
 var win_line_renderer: WinLineRenderer
 
 func _ready():
+	EventManager.spin_requested.connect(_on_ui_spin_requested)
 	EventManager.spin_started.connect(on_spin_started)
 	EventManager.win_calculated.connect(on_win_calculated)
 	
@@ -55,6 +59,9 @@ func _ready():
 	# We use call_deferred to ensure GameManager has fully populated current_outcome
 	call_deferred("_populate_initial_reels")
 
+func _on_ui_spin_requested():
+	GameManager.request_spin(debug_force_outcome, debug_presentation_pause)
+
 func _populate_initial_reels():
 	var outcome = GameManager.current_outcome
 	if outcome.size() == reels.size():
@@ -87,12 +94,18 @@ func stop_reels():
 	# EventManager.spin_stopped is emitted by GameManager when all reels stop
 
 func on_win_calculated(amount: int, winning_lines: Array):
-	# Dim all symbols first
-	for reel in reels:
-		reel.dim_all()
-		
-	# Highlight the symbols that are part of a winning line
+	# Sort the queue of winning lines by pattern length (ascending)
+	winning_lines.sort_custom(func(a, b): return a["match_count"] < b["match_count"])
+	
+	var current_pause = debug_presentation_pause
+	var pitch = 1.0
+	
+	# Present them sequentially
 	for win_data in winning_lines:
+		# Dim all symbols first before showing each line
+		for reel in reels:
+			reel.dim_all()
+			
 		var pattern: SlotPattern = win_data["pattern"]
 		var win_val: int = win_data["win_amount"]
 		var match_count: int = win_data["match_count"]
@@ -118,8 +131,38 @@ func on_win_calculated(amount: int, winning_lines: Array):
 		var gb = GoldBurst.new()
 		gb.position = screen_pos
 		add_child(gb)
+		
+		# Play beep with increasing pitch
+		if SoundManager.has_method("play_line_beep"):
+			SoundManager.play_line_beep(pitch)
+		
+		# Wait for the calculated duration
+		await get_tree().create_timer(current_pause).timeout
+		
+		# Accelerate for the next pattern
+		current_pause = max(0.4, current_pause * 0.7)
+		pitch = min(2.5, pitch * 1.1)
+		
+		# Hide the line for the next pattern
+		if win_line_renderer != null:
+			win_line_renderer.clear_lines()
 
 func _get_symbol_world_position(col: int, row: int) -> Vector2:
 	var x = col * 130.0
-	var y = (row - 1) * 110.0
+	var y = row * 110.0
 	return Vector2(x, y)
+
+func _unhandled_input(event):
+	if event is InputEventKey and event.pressed and event.keycode == KEY_T:
+		if GameManager.current_state == GameManager.GameState.IDLE:
+			_debug_force_pattern()
+
+func _debug_force_pattern():
+	print("[DEBUG] Forcing test pattern via T key...")
+	
+	var forced = debug_force_outcome
+	if forced == 0:
+		forced = 5 # Default to Jackpot if set to None
+		
+	# Pass the parameters up to the global GameManager
+	GameManager.request_spin(forced, debug_presentation_pause)

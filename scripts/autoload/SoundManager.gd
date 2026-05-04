@@ -61,8 +61,11 @@ func _on_spin_stopped():
 	spin_player.stop()
 
 func _on_win_calculated(amount: int, lines: Array):
-	print("[AUDIO] Playing Win Fanfare (Amount: ", amount, ")")
+	print("[AUDIO] Win Calculated Signal Received (Amount: ", amount, ")")
+
+func play_line_beep(pitch: float = 1.0):
 	if win_player.stream != null:
+		win_player.pitch_scale = pitch
 		win_player.play()
 
 func _on_payout_started(amount: int):
