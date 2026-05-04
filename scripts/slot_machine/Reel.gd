@@ -22,7 +22,7 @@ func _ready():
 	# Create 4 sprites (1 extra for seamless wrap-around at the top)
 	for i in range(4):
 		var sprite = Sprite2D.new()
-		sprite.position = Vector2(0, (i - 1) * 110) # -110, 0, 110, 220
+		sprite.position = Vector2(0, (i - 1) * 165) # -165, 0, 165, 330
 		sprite.scale = Vector2(0.08, 0.08)
 		sprite.material = blur_material
 		add_child(sprite)
@@ -32,15 +32,15 @@ func _process(delta):
 	if spinning:
 		for sprite in sprites:
 			sprite.position.y += spin_speed * delta
-			if sprite.position.y >= 330: # Moved past the bottom row (220)
-				sprite.position.y -= 440 # Wrap to the top (-110)
+			if sprite.position.y >= 495: # Moved past the bottom row (330)
+				sprite.position.y -= 660 # Wrap to the top (-165)
 				# Randomize texture as it blurs past
 				if GameManager.available_symbols.size() > 0:
 					sprite.texture = GameManager.available_symbols.pick_random().texture
 
 func set_initial_symbols(outcome_symbols: Array):
 	for i in range(4):
-		sprites[i].position = Vector2(0, (i - 1) * 110)
+		sprites[i].position = Vector2(0, (i - 1) * 165)
 		if i > 0 and i <= outcome_symbols.size():
 			if outcome_symbols[i-1] != null:
 				sprites[i].texture = outcome_symbols[i-1].texture
@@ -71,7 +71,7 @@ func stop_spin(outcome_symbols: Array):
 				sprites[i].texture = null
 		
 		# Snap sprite slightly above final position
-		var final_y = (i - 1) * 110
+		var final_y = (i - 1) * 165
 		sprites[i].position = Vector2(0, final_y - 80)
 		
 		# Animate down into place with a rubberband back-bounce

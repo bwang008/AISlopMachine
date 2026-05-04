@@ -6,7 +6,7 @@
 [node name="Game" type="Node2D"]
 
 [node name="SlotMachine" type="Node2D" parent="."]
-position = Vector2(320, 200)
+position = Vector2(380, 285)
 script = ExtResource("2_yyy")
 debug_force_outcome = 5
 debug_presentation_pause = 0.63
@@ -15,10 +15,10 @@ debug_presentation_pause = 0.63
 script = ExtResource("1_xxx")
 
 [node name="SpinButton" type="Button" parent="UI"]
-offset_left = 500.0
-offset_top = 500.0
-offset_right = 650.0
-offset_bottom = 560.0
+offset_left = 565.0
+offset_top = 800.0
+offset_right = 715.0
+offset_bottom = 860.0
 theme_override_font_sizes/font_size = 24
 text = "SPIN"
 

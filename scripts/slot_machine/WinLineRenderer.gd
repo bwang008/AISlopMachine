@@ -12,7 +12,7 @@ func draw_win_line(positions: Array[Vector2], line_color: Color = Color(1, 0.8, 
 		var col = pos.x
 		var row = pos.y
 		var x = col * 130 + 65
-		var y = row * 110 + 55
+		var y = row * 165 + 82
 		line.add_point(Vector2(x, y))
 		
 	add_child(line)

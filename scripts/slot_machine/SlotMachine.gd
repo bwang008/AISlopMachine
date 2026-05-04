@@ -14,27 +14,27 @@ func _ready():
 	# Create background for the slot board
 	var bg = ColorRect.new()
 	bg.color = Color(0.1, 0.1, 0.1, 1.0) # Dark gray background
-	bg.position = Vector2(-65, -55)
-	bg.size = Vector2(650, 330)
+	bg.position = Vector2(-65, -82)
+	bg.size = Vector2(650, 495)
 	add_child(bg)
 	
 	# Create a clipping container for the reels
 	var clip_container = Control.new()
 	clip_container.clip_contents = true
-	clip_container.position = Vector2(-65, -55)
-	clip_container.size = Vector2(650, 330)
+	clip_container.position = Vector2(-65, -82)
+	clip_container.size = Vector2(650, 495)
 	add_child(clip_container)
 	
 	win_line_renderer = WinLineRenderer.new()
-	win_line_renderer.position = Vector2(-65, -55) # Same as clipping container, so local coords match
+	win_line_renderer.position = Vector2(-65, -82) # Same as clipping container, so local coords match
 	add_child(win_line_renderer)
 	
 	# Spawn 5 reels inside the clipping container
 	for i in range(5):
 		var reel = Reel.new()
 		reel.reel_index = i
-		# Position relative to clip_container (which is at -65, -55)
-		reel.position = Vector2(i * 130 + 65, 55)
+		# Position relative to clip_container (which is at -65, -82)
+		reel.position = Vector2(i * 130 + 65, 82)
 		clip_container.add_child(reel)
 		reels.append(reel)
 		
@@ -42,14 +42,14 @@ func _ready():
 	for i in range(1, 5):
 		var line = ColorRect.new()
 		line.color = Color(0.3, 0.3, 0.3, 1.0) # Line color
-		line.position = Vector2(i * 130 - 65 - 2, -55) 
-		line.size = Vector2(4, 330)
+		line.position = Vector2(i * 130 - 65 - 2, -82) 
+		line.size = Vector2(4, 495)
 		add_child(line)
 
 	# Add outer border
 	var border = ReferenceRect.new()
-	border.position = Vector2(-65, -55)
-	border.size = Vector2(650, 330)
+	border.position = Vector2(-65, -82)
+	border.size = Vector2(650, 495)
 	border.editor_only = false
 	border.border_color = Color(0.8, 0.6, 0.1, 1.0) # Golden border
 	border.border_width = 5.0
@@ -149,7 +149,7 @@ func on_win_calculated(amount: int, winning_lines: Array):
 
 func _get_symbol_world_position(col: int, row: int) -> Vector2:
 	var x = col * 130.0
-	var y = row * 110.0
+	var y = row * 165.0
 	return Vector2(x, y)
 
 func _unhandled_input(event):
